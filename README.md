@@ -190,3 +190,5 @@ handling it exactly the same. It looks like this:
         return $eMessage;
     }
 ```
+
+To install using composer, use the code from the Wiki page [Composer Wiki page](../../wiki/Composer).
