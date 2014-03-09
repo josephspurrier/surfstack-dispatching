@@ -1,6 +1,6 @@
 {
    "name": "josephspurrier/surfstack-error-dispatching",
-    "description": "Error and Shutdown Handler",
+    "description": "Class Method and Function Caller",
     "keywords": ["dispatch", "dispatching"],
     "homepage": "https://github.com/josephspurrier/surfstack-dispatching",
     "type": "library",
