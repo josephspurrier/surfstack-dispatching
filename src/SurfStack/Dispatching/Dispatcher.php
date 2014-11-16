@@ -50,10 +50,25 @@ class Dispatcher
     private $arrParameters = array();
     
     /**
+     * Application configuration
+     * @var array
+     */
+    private $config = array();
+    
+    /**
      * PSR logger
      * @var LoggerInterface $logger
      */
     private $logger;
+    
+    /**
+     * Set the app config
+     * @param mixed $config
+     */
+    public function setAppConfig($config)
+    {
+        $this->config = $config;
+    }
     
     /**
      * Set the class and method
@@ -173,6 +188,14 @@ class Dispatcher
         ob_start();
         
         $class = new $this->strClass();
+        
+        // Set the app config
+        if (method_exists($class, 'setAppConfig'))
+        {
+            $class->setAppConfig(
+                $this->config
+            );
+        }
         
         try
         {   
