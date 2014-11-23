@@ -112,7 +112,7 @@ class Dispatcher
      * Determine if the method is callable
      * @return boolean
      */
-    private function isCallable()
+    protected function isCallable()
     {
         if (!class_exists($this->strClass))
         {
@@ -173,7 +173,7 @@ class Dispatcher
      * Set an error message
      * @param string $message
      */
-    private function setErrorMessage($message)
+    protected function setErrorMessage($message)
     {
         $this->strErrorMessage = $message;
     }
@@ -182,7 +182,7 @@ class Dispatcher
      * Call the method in an output buffer
      * @return string
      */
-    private function callClassMethod()
+    protected function callClassMethod()
     {
         // Start output buffering
         ob_start();
@@ -197,63 +197,31 @@ class Dispatcher
             );
         }
         
-        try
-        {   
-            // Call beforeMethod
-            if (method_exists($class, 'beforeMethod'))
-            {
-                $class->beforeMethod();
-            }
-            
-            // Call the method (will not be handled by this try / catch)
-            $return = call_user_func_array(array($class, $this->strMethod), $this->arrParameters);
-            
-            // Call beforeRender
-            if (method_exists($class, 'beforeRender'))
-            {
-                $class->beforeRender();
-            }
-            
-            // Get any error messages
-            $errorMessage = $this->getErrorMessage();
-            
-            // If an error message exists
-            if ($errorMessage && method_exists($class, 'set'))
-            {
-                // Set the error message
-                $class->set('errorMessage', $errorMessage);
-            }
-            
-            // Call render
-            if (method_exists($class, 'render'))
-            {
-                $class->render();
-            }
-            
-            // Call afterRender
-            if (method_exists($class, 'afterRender'))
-            {
-                $class->afterRender();
-            }
+        // Call beforeMethod
+        if (method_exists($class, 'beforeMethod'))
+        {
+            call_user_func_array(array($class, 'beforeMethod'), $this->arrParameters);
         }
-        catch (Exception $e)
-        {            
-            // The throw new ErrorException prevents the error page from loading so I used trigger_error
-            //throw new ErrorException($e->getMessage(), $e->getCode(), 0, $e->getFile(), $e->getLine());
-            trigger_error($e->getMessage().' (Bug Page)'.PHP_EOL.$e->getFile().' on line '.$e->getLine());
-            
-            // If an error message exists
-            if (method_exists($class, 'set'))
-            {
-                // Set the error message
-                $class->set('errorMessage', $this->getErrorMessage());
-            }
-            
-            // Render error message
-            if (method_exists($class, 'renderError'))
-            {
-                $class->renderError();
-            }
+        
+        // Call the method (will not be handled by this try / catch)
+        $return = call_user_func_array(array($class, $this->strMethod), $this->arrParameters);
+        
+        // Call beforeRender
+        if (method_exists($class, 'beforeRender'))
+        {
+            call_user_func_array(array($class, 'beforeRender'), $this->arrParameters);
+        }
+        
+        // Call render
+        if (method_exists($class, 'render'))
+        {
+            call_user_func_array(array($class, 'render'), $this->arrParameters);
+        }
+        
+        // Call afterRender
+        if (method_exists($class, 'afterRender'))
+        {
+            call_user_func_array(array($class, 'afterRender'), $this->arrParameters);
         }
 
         // End output buffering
@@ -274,51 +242,24 @@ class Dispatcher
      * Call the function in an output buffer
      * @return string
      */
-    private function callFunction()
+    protected function callFunction()
     {
         // Start output buffering
         ob_start();
-    
-        try
+        
+        // Call beforeFunction
+        if (function_exists('beforeFunction'))
         {
-            // Call beforeFunction
-            if (function_exists('beforeFunction'))
-            {
-                beforeFunction();
-            }
-    
-            // Call the method (will not be handled by this try / catch)
-            $return = call_user_func_array($this->strFunction, $this->arrParameters);
-    
-            // Call afterFunction
-            if (function_exists('afterFunction'))
-            {
-                afterFunction();
-            }
-    
-            // Get any error messages
-            $errorMessage = $this->getErrorMessage();
-            
-            // Render error message
-            if (function_exists('renderError') && $errorMessage)
-            {
-                renderError($errorMessage);
-            }
+            call_user_func_array('beforeFunction', $this->arrParameters);
         }
-        catch (Exception $e)
+
+        // Call the method (will not be handled by this try / catch)
+        $return = call_user_func_array($this->strFunction, $this->arrParameters);
+
+        // Call afterFunction
+        if (function_exists('afterFunction'))
         {
-            // The throw new ErrorException prevents the error page from loading so I used trigger_error
-            //throw new ErrorException($e->getMessage(), $e->getCode(), 0, $e->getFile(), $e->getLine());
-            trigger_error($e->getMessage().' (Bug Page)'.PHP_EOL.$e->getFile().' on line '.$e->getLine());
-    
-            // Get any error messages
-            $errorMessage = $this->getErrorMessage();
-            
-            // Render error message
-            if (function_exists('renderError') && $errorMessage)
-            {
-                renderError($errorMessage);
-            }
+            call_user_func_array('afterFunction', $this->arrParameters);
         }
     
         // End output buffering
@@ -334,50 +275,12 @@ class Dispatcher
     
         return $outputObject;
     }
-
-    /**
-     * Log and return newest error
-     * @return string
-     */
-    private function getErrorMessage()
-    {
-        $eMessage = '';
-        
-        // If an error occurred
-        if (isset($_SESSION['error']))
-        {
-            // Log the error
-            if ($this->logger)
-            {
-                $this->logger->error($_SESSION['error']);
-            }
-    
-            // Only show the error message to the admin
-            if (function_exists('isAdmin') && isAdmin())
-            {
-                // Get the error
-                $eMessage = $_SESSION['error'];
-            }
-            
-            // Clear the error
-            unset($_SESSION['error']);
-            
-            // Clear the error backlog
-            if (isset($_SESSION['errorBacklog']))
-            {
-                unset($_SESSION['errorBacklog']);
-            }
-        }
-        
-        // Return the message
-        return $eMessage;
-    }
     
     /**
      * Attempt to call the requested class and method
      * @return DispatcherResult or boolean Return false on error, returns DispatcherResult on success
      */
-    private function invokeClassMethod()
+    protected function invokeClassMethod()
     {
         // Return an error if unable to call
         if (!$this->isCallable())
@@ -398,7 +301,7 @@ class Dispatcher
      * Attempt to call the requested function
      * @return DispatcherResult or boolean Return false on error, returns DispatcherResult on success
      */
-    private function invokeFunction()
+    protected function invokeFunction()
     {
         // Return an error if unable to call
         if (!is_callable($this->strFunction))
